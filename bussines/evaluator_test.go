@@ -54,44 +54,88 @@ func TestValidateWrongSequenceAdn(t *testing.T) {
 	}
 }
 
+func TestEvaluateMatchSequence(t *testing.T) {
+	sequence := "TTTTCAAAA"
+	found := evaluateMatchSequence(sequence)
+	if found != 2 {
+		t.Errorf("Got %d, expected %d", found, 2)
+	}
+	sequence = "TTAAGGEE"
+	found = evaluateMatchSequence(sequence)
+	if found != 0 {
+		t.Errorf("Got %d, expected %d", found, 2)
+	}
+}
+
 func TestFindHorizontalSequence(t *testing.T) {
-	adn := [][]string{{"A", "A", "A", "A", "C"}, {"A", "T", "C", "G", "T"}, {"A", "T", "C", "E", "E"}, {"A", "T", "C", "F", "F"}}
-	indexFound := make(map[string]bool)
-	var found bool
-	indexFoundExpected := map[string]bool{"00": true, "01": true, "02": true, "03": true}
-	found, indexFound = findHorizontalSequence(adn, indexFound, 0, 0)
-	if !found {
+	adn := [][]string{{"A", "A", "A", "A", "C"}}
+	found := findHorizontalSequence(adn, 0, 0)
+	if found < 1 {
 		t.Errorf("Sequence not found in indexes 0 , 0")
 	}
-	sizeIndexesFound := len(indexFound)
-	sizeIndexesExpected := len(indexFoundExpected)
-	if len(indexFoundExpected) != len(indexFound) {
-		t.Errorf("Expected %d, got %d", sizeIndexesExpected, sizeIndexesFound)
-	}
-	for k, v := range indexFound {
-		if v != indexFoundExpected[k] {
-			t.Errorf("Expected true for the key %s", k)
-		}
+	adn = [][]string{{"T", "T", "T", "T", "C", "A", "A", "A", "A"}}
+	found = findHorizontalSequence(adn, 0, 0)
+	if found < 1 {
+		t.Errorf("Sequence not found in indexes 0 , 0")
 	}
 }
 
 func TestFindVerticalSequence(t *testing.T) {
-	adn := [][]string{{"A", "A", "A", "A", "C"}, {"A", "T", "C", "G", "T"}, {"A", "T", "C", "E", "E"}, {"A", "T", "C", "F", "F"}}
-	indexFound := make(map[string]bool)
-	var found bool
-	indexFoundExpected := map[string]bool{"00": true, "10": true, "20": true, "30": true}
-	found, indexFound = findVerticalSequence(adn, indexFound, 0, 0)
-	if !found {
+	adn := [][]string{{"A"}, {"A"}, {"A"}, {"A"}, {"C"}}
+	found := findVerticalSequence(adn, 0, 0)
+	if found < 1 {
 		t.Errorf("Sequence not found in indexes 0 , 0")
 	}
-	sizeIndexesFound := len(indexFound)
-	sizeIndexesExpected := len(indexFoundExpected)
-	if len(indexFoundExpected) != len(indexFound) {
-		t.Errorf("Expected %d, got %d", sizeIndexesExpected, sizeIndexesFound)
+	adn = [][]string{{"T"}, {"T"}, {"T"}, {"T"}, {"C"}, {"A"}, {"A"}, {"A"}, {"A"}}
+	found = findVerticalSequence(adn, 0, 0)
+	if found < 1 {
+		t.Errorf("Sequence not found in indexes 0 , 0")
 	}
-	for k, v := range indexFound {
-		if v != indexFoundExpected[k] {
-			t.Errorf("Expected true for the key %s", k)
-		}
+}
+
+func TestFindDiagonal(t *testing.T) {
+	adn := [][]string{
+		{"A", "T", "G", "C", "G", "A"},
+		{"C", "A", "G", "T", "G", "C"},
+		{"T", "T", "A", "T", "G", "T"},
+		{"A", "G", "A", "A", "G", "G"},
+		{"C", "C", "C", "C", "T", "A"},
+		{"T", "C", "A", "C", "T", "G"},
+	}
+	found := findDiagonalSequence(adn, 0, 0)
+	if found < 1 {
+		t.Errorf("Sequence not found in indexes 0 , 0")
+	}
+	adn = [][]string{
+		{"A", "T", "G", "C", "G", "A", "A", "T", "C", "G"},
+		{"C", "A", "G", "T", "G", "C", "A", "T", "C", "G"},
+		{"T", "T", "A", "T", "G", "T", "A", "T", "C", "G"},
+		{"A", "G", "A", "A", "G", "G", "A", "T", "C", "G"},
+		{"C", "C", "C", "C", "T", "A", "A", "T", "C", "G"},
+		{"T", "C", "A", "C", "T", "G", "A", "T", "C", "G"},
+		{"T", "C", "A", "C", "T", "G", "T", "T", "C", "G"},
+		{"T", "C", "A", "C", "T", "G", "T", "T", "C", "G"},
+		{"T", "C", "A", "C", "T", "G", "T", "T", "T", "G"},
+		{"T", "C", "A", "C", "T", "G", "T", "T", "T", "T"},
+	}
+	found = findDiagonalSequence(adn, 0, 0)
+	if found < 1 {
+		t.Errorf("Sequence not found in indexes 0 , 0")
+	}
+
+}
+
+func TestCheckSequences(t *testing.T) {
+	adn := [][]string{
+		{"A", "T", "G", "C", "G", "A"},
+		{"C", "A", "G", "T", "G", "C"},
+		{"T", "T", "A", "T", "G", "T"},
+		{"A", "G", "A", "A", "G", "G"},
+		{"C", "C", "C", "C", "T", "A"},
+		{"T", "C", "A", "C", "T", "G"},
+	}
+	sequencesFound := checkSequences(adn)
+	if !sequencesFound {
+		t.Errorf("Sequence not found in dna")
 	}
 }

@@ -2,7 +2,6 @@ package bussines
 
 import (
 	"regexp"
-	"strconv"
 )
 
 func IsMutant(dna []string) bool {
@@ -14,85 +13,71 @@ func IsMutant(dna []string) bool {
 }
 
 func checkSequences(dna [][]string) bool {
-	var indexFound map[string]bool
 	size := len(dna)
 	totalSequences := 0
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
-			if !indexFound[string(i)+string(j)] {
-				var rowSequences int
-				rowSequences, indexFound = findSequences(dna, indexFound, i, j)
-				totalSequences += rowSequences
-				if totalSequences == 2 {
-					return true
-				}
+			var rowSequences int
+			rowSequences = findSequences(dna, i, j)
+			totalSequences += rowSequences
+			if totalSequences > 1 {
+				return true
 			}
 		}
-		if totalSequences == 2 {
+		if totalSequences > 1 {
 			return true
 		}
 	}
-	return totalSequences >= 2
+	return totalSequences > 1
 }
 
-func findSequences(dna [][]string, indexFound map[string]bool, i int, j int) (int, map[string]bool) {
+func findSequences(dna [][]string, i int, j int) int {
 	totalSequences := 0
-	foundSequence, indexUsed := findVerticalSequence(dna, indexFound, i, j)
-	if foundSequence {
-		totalSequences++
+	totalSequences += findVerticalSequence(dna, i, j)
+	if totalSequences > 1 {
+		return totalSequences
 	}
-	foundSequence, indexUsed = findHorizontalSequence(dna, indexUsed, i, j)
-	if foundSequence {
-		totalSequences++
+	totalSequences += findHorizontalSequence(dna, i, j)
+	if totalSequences > 1 {
+		return totalSequences
 	}
-	if totalSequences == 2 {
-		return totalSequences, indexUsed
+	totalSequences += findDiagonalSequence(dna, i, j)
+	if totalSequences > 1 {
+		return totalSequences
 	}
-	foundSequence, indexUsed = findDiagonalUpSequence(dna, indexUsed, i, j)
-	if foundSequence {
-		totalSequences++
-	}
-	if totalSequences == 2 {
-		return totalSequences, indexUsed
-	}
-	foundSequence, indexUsed = findDiagonalDownSequence(dna, indexUsed, i, j)
-	if foundSequence {
-		totalSequences++
-	}
-	if totalSequences == 2 {
-		return totalSequences, indexUsed
-	}
-	return totalSequences, indexUsed
+	return totalSequences
 }
 
-func findDiagonalDownSequence(dna [][]string, used map[string]bool, i int, j int) (bool, map[string]bool) {
-	return true, used
-}
-
-func findDiagonalUpSequence(dna [][]string, used map[string]bool, i int, j int) (bool, map[string]bool) {
-	return true, used
-}
-
-func findHorizontalSequence(dna [][]string, used map[string]bool, i int, j int) (bool, map[string]bool) {
-	if dna[i][j] == dna[i][j+1] && dna[i][j] == dna[i][j+2] && dna[i][j] == dna[i][j+3] {
-		used[strconv.Itoa(i)+strconv.Itoa(j)] = true
-		used[strconv.Itoa(i)+strconv.Itoa(j+1)] = true
-		used[strconv.Itoa(i)+strconv.Itoa(j+2)] = true
-		used[strconv.Itoa(i)+strconv.Itoa(j+3)] = true
-		return true, used
+func findDiagonalSequence(dna [][]string, i int, j int) int {
+	sequence := ""
+	indexV := i
+	for index := j; index < len(dna); index++ {
+		sequence += dna[indexV][index]
+		indexV++
 	}
-	return false, used
+	return evaluateMatchSequence(sequence)
 }
 
-func findVerticalSequence(dna [][]string, used map[string]bool, i int, j int) (bool, map[string]bool) {
-	if dna[i][j] == dna[i+1][j] && dna[i][j] == dna[i+2][j] && dna[i][j] == dna[i+3][j] {
-		used[strconv.Itoa(i)+strconv.Itoa(j)] = true
-		used[strconv.Itoa(i+1)+strconv.Itoa(j)] = true
-		used[strconv.Itoa(i+2)+strconv.Itoa(j)] = true
-		used[strconv.Itoa(i+3)+strconv.Itoa(j)] = true
-		return true, used
+func findHorizontalSequence(dna [][]string, i int, j int) int {
+	sequence := ""
+	for index := j; index < len(dna[i]); index++ {
+		sequence += dna[i][index]
 	}
-	return false, used
+	return evaluateMatchSequence(sequence)
+}
+
+func findVerticalSequence(dna [][]string, i int, j int) int {
+	sequence := ""
+	for index := i; index < len(dna); index++ {
+		sequence += dna[index][j]
+	}
+	return evaluateMatchSequence(sequence)
+}
+
+func evaluateMatchSequence(sequence string) int {
+	reg := regexp.MustCompile("(?:AAAA|TTTT|CCCC|GGGG)(?:\\s+(?:AAAA|TTTT|CCCC|GGGG))*")
+	sequencesFound := reg.FindAllString(sequence, -1)
+	return len(sequencesFound)
 }
 
 func createMatrix(dna []string) [][]string {
@@ -105,7 +90,7 @@ func createMatrix(dna []string) [][]string {
 }
 
 func validateAdn(dna []string) bool {
-	return isNxN(dna) && matchPattern(dna)
+	return isNxN(dna) && matchPattern(dna) && len(dna) >= 4
 }
 
 func isNxN(dna []string) bool {

@@ -56,10 +56,8 @@ func findSequences(dna [][]string, i int, j int) int {
 
 func findDiagonalSequence(dna [][]string, i int, j int) int {
 	sequence := ""
-	indexV := i
 	for index1, index2 := i, j; index1 < len(dna) && index2 < len(dna); index1, index2 = index1+1, index2+1 {
 		sequence += dna[index1][index2]
-		indexV++
 	}
 	return evaluateMatchSequence(sequence)
 }

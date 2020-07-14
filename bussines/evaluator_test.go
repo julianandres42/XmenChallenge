@@ -125,6 +125,33 @@ func TestFindDiagonal(t *testing.T) {
 
 }
 
+func TestFindSequences(t *testing.T) {
+	adn := [][]string{
+		{"A", "A", "A", "A", "G", "A"},
+		{"A", "G", "G", "T", "G", "C"},
+		{"A", "T", "A", "T", "G", "T"},
+		{"A", "G", "A", "A", "G", "G"},
+		{"C", "C", "C", "C", "T", "A"},
+		{"T", "C", "A", "C", "T", "G"},
+	}
+	sequencesFound := findSequences(adn, 0, 0)
+	if sequencesFound != 2 {
+		t.Errorf("Sequence not found in indexes 0 , 0")
+	}
+	adn = [][]string{
+		{"A", "A", "G", "T", "G", "A"},
+		{"A", "A", "G", "T", "G", "C"},
+		{"A", "T", "A", "T", "G", "T"},
+		{"A", "G", "A", "A", "G", "G"},
+		{"C", "C", "C", "C", "T", "A"},
+		{"T", "C", "A", "C", "T", "G"},
+	}
+	sequencesFound = findSequences(adn, 0, 0)
+	if sequencesFound != 2 {
+		t.Errorf("Sequence not found in indexes 0 , 0")
+	}
+}
+
 func TestCheckSequences(t *testing.T) {
 	adn := [][]string{
 		{"A", "T", "G", "C", "G", "A"},
@@ -137,5 +164,18 @@ func TestCheckSequences(t *testing.T) {
 	sequencesFound := checkSequences(adn)
 	if !sequencesFound {
 		t.Errorf("Sequence not found in dna")
+	}
+}
+
+func TestIsMutant(t *testing.T) {
+	dna := []string{"ATGCGA", "CAGTGC", "TTATGT", "AGAAGG", "CCCCTA", "TCACTG"}
+	isMutant := IsMutant(dna)
+	if !isMutant {
+		t.Errorf("Got not mutant")
+	}
+	dna = []string{"ATGCGA", "CAGTGC", "TTATTT", "AGACGG", "GCGTCA", "TCACTG"}
+	isMutant = IsMutant(dna)
+	if isMutant {
+		t.Errorf("Got mutant")
 	}
 }

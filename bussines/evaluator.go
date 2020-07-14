@@ -33,17 +33,23 @@ func checkSequences(dna [][]string) bool {
 
 func findSequences(dna [][]string, i int, j int) int {
 	totalSequences := 0
-	totalSequences += findVerticalSequence(dna, i, j)
-	if totalSequences > 1 {
-		return totalSequences
+	if i+4 <= len(dna)-1 {
+		totalSequences += findVerticalSequence(dna, i, j)
+		if totalSequences > 1 {
+			return totalSequences
+		}
 	}
-	totalSequences += findHorizontalSequence(dna, i, j)
-	if totalSequences > 1 {
-		return totalSequences
+	if j+4 <= len(dna)-1 {
+		totalSequences += findHorizontalSequence(dna, i, j)
+		if totalSequences > 1 {
+			return totalSequences
+		}
 	}
-	totalSequences += findDiagonalSequence(dna, i, j)
-	if totalSequences > 1 {
-		return totalSequences
+	if i+4 <= len(dna)-1 && j+4 <= len(dna)-1 {
+		totalSequences += findDiagonalSequence(dna, i, j)
+		if totalSequences > 1 {
+			return totalSequences
+		}
 	}
 	return totalSequences
 }
@@ -51,8 +57,8 @@ func findSequences(dna [][]string, i int, j int) int {
 func findDiagonalSequence(dna [][]string, i int, j int) int {
 	sequence := ""
 	indexV := i
-	for index := j; index < len(dna); index++ {
-		sequence += dna[indexV][index]
+	for index1, index2 := i, j; index1 < len(dna) && index2 < len(dna); index1, index2 = index1+1, index2+1 {
+		sequence += dna[index1][index2]
 		indexV++
 	}
 	return evaluateMatchSequence(sequence)

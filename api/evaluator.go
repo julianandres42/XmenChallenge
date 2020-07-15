@@ -1,8 +1,20 @@
-package bussines
+package api
 
 import (
 	"regexp"
 )
+
+type MutantEvaluator interface {
+	IsMutant() bool
+}
+
+type DnaSequenceEvaluator struct {
+	Dna []string
+}
+
+func (evaluator DnaSequenceEvaluator) IsMutant() bool {
+	return IsMutant(evaluator.Dna)
+}
 
 func IsMutant(dna []string) bool {
 	if !validateAdn(dna) {

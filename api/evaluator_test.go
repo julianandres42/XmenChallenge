@@ -1,4 +1,4 @@
-package bussines
+package api
 
 import "testing"
 
@@ -169,12 +169,15 @@ func TestCheckSequences(t *testing.T) {
 
 func TestIsMutant(t *testing.T) {
 	dna := []string{"ATGCGA", "CAGTGC", "TTATGT", "AGAAGG", "CCCCTA", "TCACTG"}
-	isMutant := IsMutant(dna)
+	evaluator := DnaSequenceEvaluator{}
+	evaluator.Dna = dna
+	isMutant := evaluator.IsMutant()
 	if !isMutant {
 		t.Errorf("Got not mutant")
 	}
 	dna = []string{"ATGCGA", "CAGTGC", "TTATTT", "AGACGG", "GCGTCA", "TCACTG"}
-	isMutant = IsMutant(dna)
+	evaluator.Dna = dna
+	isMutant = evaluator.IsMutant()
 	if isMutant {
 		t.Errorf("Got mutant")
 	}

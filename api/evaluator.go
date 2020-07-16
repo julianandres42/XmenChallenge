@@ -6,14 +6,23 @@ import (
 
 type MutantEvaluator interface {
 	IsMutant() bool
+	SetDna([]string)
 }
 
 type DnaSequenceEvaluator struct {
 	Dna []string
 }
 
-func (evaluator DnaSequenceEvaluator) IsMutant() bool {
+func (evaluator *DnaSequenceEvaluator) IsMutant() bool {
 	return IsMutant(evaluator.Dna)
+}
+
+func (evaluator *DnaSequenceEvaluator) SetDna(dna []string) {
+	evaluator.Dna = dna
+}
+
+func NewDnaSequenceEvaluator() MutantEvaluator {
+	return &DnaSequenceEvaluator{}
 }
 
 func IsMutant(dna []string) bool {

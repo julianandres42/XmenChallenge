@@ -2,7 +2,6 @@ package persistence
 
 import (
 	"database/sql"
-	"errors"
 )
 
 type DbApi interface {
@@ -32,7 +31,15 @@ type Stats struct {
 	countHumans  int
 }
 
-func (s *Stats) getRatio() float32 {
+func (s *Stats) GetCountMutants() int {
+	return s.countMutants
+}
+
+func (s *Stats) GetCountHumans() int {
+	return s.countHumans
+}
+
+func (s *Stats) GetRatio() float32 {
 	return float32(s.countMutants) / float32(s.countHumans)
 }
 
@@ -43,12 +50,30 @@ func GetNewStats(countMutants, countHumans int) *Stats {
 type MysqlImp struct{}
 
 func (imp *MysqlImp) SaveCandidate(db *sql.DB, candidate *Candidate) error {
-	_, err := db.Exec("INSERT INTO Candidate (dna, is_mutant) VALUES (?, ?)", candidate.getDna(), candidate.getIsMutant())
-	return err
+	var nRecords int
+	err := db.QueryRow("SELECT count(*) FROM Candidate WHERE dna = ?", candidate.getDna()).Scan(&nRecords)
+	if err != nil {
+		return err
+	}
+	if nRecords == 0 {
+		_, err = db.Exec("INSERT INTO Candidate (dna, is_mutant) VALUES (?, ?)", candidate.getDna(), candidate.getIsMutant())
+		return err
+	}
+	return nil
 }
 
 func (imp *MysqlImp) GetStats(db *sql.DB) (*Stats, error) {
-	return nil, errors.New("")
+	var nMutants int
+	err := db.QueryRow("SELECT count(*) FROM Candidate WHERE is_mutant = ?", true).Scan(&nMutants)
+	if err != nil {
+		return nil, err
+	}
+	var nHumans int
+	err = db.QueryRow("SELECT count(*) FROM Candidate WHERE is_mutant = ?", false).Scan(&nHumans)
+	if err != nil {
+		return nil, err
+	}
+	return GetNewStats(nMutants, nHumans), nil
 }
 
 func NewMysqlImp() DbApi {

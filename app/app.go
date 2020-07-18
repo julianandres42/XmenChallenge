@@ -26,6 +26,16 @@ type Mutant struct {
 	Dna []string `json:"dna"`
 }
 
+type Stats struct {
+	CountMutant int     `json:"count_mutant_dna"`
+	CountHuman  int     `json:"count_human_dna"`
+	Ratio       float32 `json:"ratio"`
+}
+
+func GetNewStats(countMutant, countHuman int, ratio float32) *Stats {
+	return &Stats{CountMutant: countMutant, CountHuman: countHuman, Ratio: ratio}
+}
+
 func (a *App) Initialize(user, password, host, dbname string) {
 	a.EstablishDataBaseConnection(user, password, host, dbname)
 	a.Router = mux.NewRouter()
@@ -45,6 +55,7 @@ func (a *App) EstablishDataBaseConnection(user, password, host, dbname string) {
 
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/mutant", a.isMutant).Methods("POST")
+	a.Router.HandleFunc("/stats", a.stats).Methods("GET")
 }
 
 func (a *App) Run(addr string) {
@@ -71,4 +82,16 @@ func (a *App) isMutant(writer http.ResponseWriter, request *http.Request) {
 	} else {
 		writer.WriteHeader(http.StatusForbidden)
 	}
+}
+
+func (a *App) stats(writer http.ResponseWriter, request *http.Request) {
+	dbStats, err := a.DbApi.GetStats(a.DB)
+	if err != nil {
+		print(fmt.Sprint("error in data base &s"), err)
+	}
+	jsonStats := GetNewStats(dbStats.GetCountMutants(), dbStats.GetCountHumans(), dbStats.GetRatio())
+	response, _ := json.Marshal(jsonStats)
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	writer.Write(response)
 }

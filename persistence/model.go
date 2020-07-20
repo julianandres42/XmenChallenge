@@ -50,12 +50,11 @@ func GetNewStats(countMutants, countHumans int) *Stats {
 type MysqlImp struct{}
 
 func (imp *MysqlImp) SaveCandidate(db *sql.DB, candidate *Candidate) error {
-	var nRecords int
-	err := db.QueryRow("SELECT count(*) FROM Candidate WHERE dna = ?", candidate.getDna()).Scan(&nRecords)
+	rows, err := db.Query("SELECT * FROM Candidate WHERE dna = ?", candidate.getDna())
 	if err != nil {
 		return err
 	}
-	if nRecords == 0 {
+	if !rows.Next() {
 		_, err = db.Exec("INSERT INTO Candidate (dna, is_mutant) VALUES (?, ?)", candidate.getDna(), candidate.getIsMutant())
 		return err
 	}

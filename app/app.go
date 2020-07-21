@@ -45,12 +45,29 @@ func (a *App) Initialize(user, password, host, dbname string) {
 }
 
 func (a *App) EstablishDataBaseConnection(user, password, host, dbname string) {
+	user, password, host, dbname = setDefaultDbValues(user, password, host, dbname)
 	connectionString := fmt.Sprintf("%s:%s@tcp(%s)/%s", user, password, host, dbname)
 	var err error
 	a.DB, err = sql.Open("mysql", connectionString)
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func setDefaultDbValues(user, password, host, dbname string) (string, string, string, string) {
+	if user == "" {
+		user = "root"
+	}
+	if password == "" {
+		password = "admin"
+	}
+	if host == "" {
+		host = "35.188.5.67"
+	}
+	if dbname == "" {
+		dbname = "mutants"
+	}
+	return user, password, host, dbname
 }
 
 func (a *App) initializeRoutes() {
@@ -75,7 +92,9 @@ func (a *App) isMutant(writer http.ResponseWriter, request *http.Request) {
 	candidate := persistence.GetNewCandidate(strings.Join(mutant.Dna, ","), isMutant)
 	err := a.DbApi.SaveCandidate(a.DB, candidate)
 	if err != nil {
-		print(fmt.Sprint("error in data base &s"), err)
+		print(fmt.Sprint("error in data base &s"), err.Error())
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	if isMutant {
 		writer.WriteHeader(http.StatusOK)
@@ -87,7 +106,9 @@ func (a *App) isMutant(writer http.ResponseWriter, request *http.Request) {
 func (a *App) stats(writer http.ResponseWriter, request *http.Request) {
 	dbStats, err := a.DbApi.GetStats(a.DB)
 	if err != nil {
-		print(fmt.Sprint("error in data base &s"), err)
+		print(fmt.Sprint("error in data base &s"), err.Error())
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	jsonStats := GetNewStats(dbStats.GetCountMutants(), dbStats.GetCountHumans(), dbStats.GetRatio())
 	response, _ := json.Marshal(jsonStats)

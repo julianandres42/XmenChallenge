@@ -23,3 +23,9 @@ handlers:
 
   - url: /.*
     script: auto
+env_variables:
+  DB_USER: "root"
+  DB_PASSWORD: "admin"
+  DB_HOST: "my-project-meli-test:us-central1:practice1"
+  DB_NAME: "mutants"
+  DB_MACHINE: "cloud"

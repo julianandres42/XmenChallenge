@@ -38,11 +38,9 @@ func (a *App) Initialize(user, password, host, dbname, machine string) {
 	a.EstablishDataBaseConnection(user, password, host, dbname, machine)
 	a.Evaluator = api.NewDnaSequenceEvaluator()
 	a.DbApi = persistence.NewMysqlImp()
-	//a.initializeRoutes()
 }
 
 func (a *App) EstablishDataBaseConnection(user, password, host, dbname, machine string) {
-	user, password, host, dbname, machine = setDefaultDbValues(user, password, host, dbname, machine)
 	dbPatternConnection := ""
 	if machine == "local" {
 		dbPatternConnection = "%s:%s@tcp(%s)/%s"
@@ -50,30 +48,7 @@ func (a *App) EstablishDataBaseConnection(user, password, host, dbname, machine 
 		dbPatternConnection = "%s:%s@unix(/cloudsql/%s)/%s"
 	}
 	dbURI := fmt.Sprintf(dbPatternConnection, user, password, host, dbname)
-	var err error
-	a.DB, err = sql.Open("mysql", dbURI)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func setDefaultDbValues(user, password, host, dbname, machine string) (string, string, string, string, string) {
-	if user == "" {
-		user = "root"
-	}
-	if password == "" {
-		password = "admin"
-	}
-	if host == "" {
-		host = "my-project-meli-test:us-central1:practice1"
-	}
-	if dbname == "" {
-		dbname = "mutants"
-	}
-	if machine == "" {
-		machine = "cloud"
-	}
-	return user, password, host, dbname, machine
+	a.DB, _ = sql.Open("mysql", dbURI)
 }
 
 func (a *App) IsMutant(writer http.ResponseWriter, request *http.Request) {

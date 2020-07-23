@@ -69,12 +69,12 @@ func TestEvaluateMatchSequence(t *testing.T) {
 
 func TestFindHorizontalSequence(t *testing.T) {
 	adn := [][]string{{"A", "A", "A", "A", "C"}}
-	found := findHorizontalSequence(adn, 0, 0)
+	found := findHorizontalSequence(adn[0], 0)
 	if found < 1 {
 		t.Errorf("Sequence not found in indexes 0 , 0")
 	}
 	adn = [][]string{{"T", "T", "T", "T", "C", "A", "A", "A", "A"}}
-	found = findHorizontalSequence(adn, 0, 0)
+	found = findHorizontalSequence(adn[0], 0)
 	if found < 1 {
 		t.Errorf("Sequence not found in indexes 0 , 0")
 	}

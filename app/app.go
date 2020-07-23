@@ -12,11 +12,9 @@ import (
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gorilla/mux"
 )
 
 type App struct {
-	Router    *mux.Router
 	DB        *sql.DB
 	Evaluator api.MutantEvaluator
 	DbApi     persistence.DbApi
@@ -36,25 +34,30 @@ func GetNewStats(countMutant, countHuman int, ratio float32) *Stats {
 	return &Stats{CountMutant: countMutant, CountHuman: countHuman, Ratio: ratio}
 }
 
-func (a *App) Initialize(user, password, host, dbname string) {
-	a.EstablishDataBaseConnection(user, password, host, dbname)
-	a.Router = mux.NewRouter()
+func (a *App) Initialize(user, password, host, dbname, machine string) {
+	a.EstablishDataBaseConnection(user, password, host, dbname, machine)
 	a.Evaluator = api.NewDnaSequenceEvaluator()
 	a.DbApi = persistence.NewMysqlImp()
-	a.initializeRoutes()
+	//a.initializeRoutes()
 }
 
-func (a *App) EstablishDataBaseConnection(user, password, host, dbname string) {
-	user, password, host, dbname = setDefaultDbValues(user, password, host, dbname)
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s)/%s", user, password, host, dbname)
+func (a *App) EstablishDataBaseConnection(user, password, host, dbname, machine string) {
+	user, password, host, dbname, machine = setDefaultDbValues(user, password, host, dbname, machine)
+	dbPatternConnection := ""
+	if machine == "local" {
+		dbPatternConnection = "%s:%s@tcp(%s)/%s"
+	} else if machine == "cloud" {
+		dbPatternConnection = "%s:%s@unix(/cloudsql/%s)/%s"
+	}
+	dbURI := fmt.Sprintf(dbPatternConnection, user, password, host, dbname)
 	var err error
-	a.DB, err = sql.Open("mysql", connectionString)
+	a.DB, err = sql.Open("mysql", dbURI)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func setDefaultDbValues(user, password, host, dbname string) (string, string, string, string) {
+func setDefaultDbValues(user, password, host, dbname, machine string) (string, string, string, string, string) {
 	if user == "" {
 		user = "root"
 	}
@@ -62,24 +65,23 @@ func setDefaultDbValues(user, password, host, dbname string) (string, string, st
 		password = "admin"
 	}
 	if host == "" {
-		host = "35.188.5.67"
+		host = "my-project-meli-test:us-central1:practice1"
 	}
 	if dbname == "" {
 		dbname = "mutants"
 	}
-	return user, password, host, dbname
+	if machine == "" {
+		machine = "cloud"
+	}
+	return user, password, host, dbname, machine
 }
 
-func (a *App) initializeRoutes() {
-	a.Router.HandleFunc("/mutant", a.isMutant).Methods("POST")
-	a.Router.HandleFunc("/stats", a.stats).Methods("GET")
-}
-
-func (a *App) Run(addr string) {
-	log.Fatal(http.ListenAndServe(addr, a.Router))
-}
-
-func (a *App) isMutant(writer http.ResponseWriter, request *http.Request) {
+func (a *App) IsMutant(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != "POST" {
+		writer.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	log.Print("Getting is mutant")
 	reqBody, _ := ioutil.ReadAll(request.Body)
 	var mutant Mutant
 	json.Unmarshal(reqBody, &mutant)
@@ -92,10 +94,12 @@ func (a *App) isMutant(writer http.ResponseWriter, request *http.Request) {
 	candidate := persistence.GetNewCandidate(strings.Join(mutant.Dna, ","), isMutant)
 	err := a.DbApi.SaveCandidate(a.DB, candidate)
 	if err != nil {
-		print(fmt.Sprint("error in data base &s"), err.Error())
+		fmt.Fprintf(writer, "error in data base connection")
+		log.Print("Error in database connection")
 		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	log.Print("Success saving candidate")
 	if isMutant {
 		writer.WriteHeader(http.StatusOK)
 	} else {
@@ -103,13 +107,20 @@ func (a *App) isMutant(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func (a *App) stats(writer http.ResponseWriter, request *http.Request) {
+func (a *App) Stats(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != "GET" {
+		writer.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	log.Print("Getting stats")
 	dbStats, err := a.DbApi.GetStats(a.DB)
 	if err != nil {
-		print(fmt.Sprint("error in data base &s"), err.Error())
+		fmt.Fprintf(writer, "error in data base connection")
+		log.Print("Error in database connection")
 		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	log.Print("Success getting stats")
 	jsonStats := GetNewStats(dbStats.GetCountMutants(), dbStats.GetCountHumans(), dbStats.GetRatio())
 	response, _ := json.Marshal(jsonStats)
 	writer.Header().Set("Content-Type", "application/json")

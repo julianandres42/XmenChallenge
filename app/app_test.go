@@ -41,7 +41,7 @@ func (T3) GetStats(db *sql.DB) (*persistence.Stats, error) {
 
 func TestInitialize(t *testing.T) {
 	app := App{Evaluator: T{}, DbApi: T3{}}
-	app.Initialize("", "", "", "")
+	app.Initialize("", "", "", "", "")
 }
 
 func TestIsMutant(t *testing.T) {
@@ -56,7 +56,7 @@ func TestIsMutant(t *testing.T) {
 		t.Fatalf("could not created request: %v", err)
 	}
 	rec := httptest.NewRecorder()
-	app.isMutant(rec, req)
+	app.IsMutant(rec, req)
 	res := rec.Result()
 	if res.StatusCode != http.StatusOK {
 		t.Errorf("expected %d, got: %d", http.StatusOK, res.StatusCode)
@@ -75,7 +75,7 @@ func TestIsNotMutant(t *testing.T) {
 		t.Fatalf("could not created request: %v", err)
 	}
 	rec := httptest.NewRecorder()
-	app.isMutant(rec, req)
+	app.IsMutant(rec, req)
 	res := rec.Result()
 	if res.StatusCode != http.StatusForbidden {
 		t.Errorf("expected %d, got: %d", http.StatusOK, res.StatusCode)
@@ -93,7 +93,7 @@ func TestBadRequest(t *testing.T) {
 		t.Fatalf("could not created request: %v", err)
 	}
 	rec := httptest.NewRecorder()
-	app.isMutant(rec, req)
+	app.IsMutant(rec, req)
 	res := rec.Result()
 	if res.StatusCode != http.StatusBadRequest {
 		t.Errorf("expected %d, got: %d", http.StatusOK, res.StatusCode)
@@ -112,9 +112,45 @@ func TestStats(t *testing.T) {
 		t.Fatalf("could not created request: %v", err)
 	}
 	rec := httptest.NewRecorder()
-	app.stats(rec, req)
+	app.Stats(rec, req)
 	json.Unmarshal(rec.Body.Bytes(), &stats)
 	if stats.CountHuman != 1 || stats.CountMutant != 1 || stats.Ratio != 1 {
 		t.Errorf("expected %d, got: %d , %d,  got %d, %d, got %f", 1, stats.CountMutant, 1, stats.CountHuman, 1, stats.Ratio)
+	}
+}
+
+func TestIsMutantMethodNotAllowed(t *testing.T) {
+	app := App{Evaluator: T2{}, DbApi: T3{}}
+	requestBody, err := json.Marshal(map[string][]string{"dna": {}})
+	if err != nil {
+		t.Fatalf("could not created request: %v", err)
+	}
+	req, err := http.NewRequest("GET", "/mutant", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatalf("could not created request: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	app.IsMutant(rec, req)
+	res := rec.Result()
+	if res.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("expected %d, got: %d", http.StatusOK, res.StatusCode)
+	}
+}
+
+func TestStatsMethodNotAllowed(t *testing.T) {
+	app := App{Evaluator: T2{}, DbApi: T3{}}
+	requestBody, err := json.Marshal(map[string][]string{"dna": {}})
+	if err != nil {
+		t.Fatalf("could not created request: %v", err)
+	}
+	req, err := http.NewRequest("POST", "/stats", bytes.NewBuffer(requestBody))
+	if err != nil {
+		t.Fatalf("could not created request: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	app.Stats(rec, req)
+	res := rec.Result()
+	if res.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("expected %d, got: %d", http.StatusOK, res.StatusCode)
 	}
 }

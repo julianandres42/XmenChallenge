@@ -2,6 +2,7 @@ package api
 
 import (
 	"regexp"
+	"strings"
 )
 
 type MutantEvaluator interface {
@@ -61,7 +62,7 @@ func findSequences(dna [][]string, i int, j int) int {
 		}
 	}
 	if j+4 <= len(dna)-1 {
-		totalSequences += findHorizontalSequence(dna, i, j)
+		totalSequences += findHorizontalSequence(dna[i], j)
 		if totalSequences > 1 {
 			return totalSequences
 		}
@@ -83,12 +84,8 @@ func findDiagonalSequence(dna [][]string, i int, j int) int {
 	return evaluateMatchSequence(sequence)
 }
 
-func findHorizontalSequence(dna [][]string, i int, j int) int {
-	sequence := ""
-	for index := j; index < len(dna[i]); index++ {
-		sequence += dna[i][index]
-	}
-	return evaluateMatchSequence(sequence)
+func findHorizontalSequence(dna []string, j int) int {
+	return evaluateMatchSequence(strings.Join(dna[j:], ""))
 }
 
 func findVerticalSequence(dna [][]string, i int, j int) int {

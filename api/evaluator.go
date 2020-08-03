@@ -3,6 +3,7 @@ package api
 import (
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type MutantEvaluator interface {
@@ -31,75 +32,76 @@ func IsMutant(dna []string) bool {
 		return false
 	}
 	dnaMatrix := createMatrix(dna)
-	return checkSequences(dnaMatrix)
+	sequencesFound := findDiagonalUpperSequence(dnaMatrix, 0)
+	if sequencesFound > 1 {
+		return true
+	}
+	var w sync.WaitGroup
+	var mg sync.Mutex
+	size := len(dnaMatrix)
+	half := size / 2
+	w.Add(6)
+	go searchSequences(dnaMatrix, 0, half-1, findHorizontalSequence, &sequencesFound, &w, &mg)
+	go searchSequences(dnaMatrix, half, size-1, findHorizontalSequence, &sequencesFound, &w, &mg)
+	go searchSequences(dnaMatrix, 0, half-1, findVerticalSequence, &sequencesFound, &w, &mg)
+	go searchSequences(dnaMatrix, half, size-1, findVerticalSequence, &sequencesFound, &w, &mg)
+	go searchSequences(dnaMatrix, 1, size-4, findDiagonalUpperSequence, &sequencesFound, &w, &mg)
+	go searchSequences(dnaMatrix, 1, size-4, findDiagonalLowerSequence, &sequencesFound, &w, &mg)
+	w.Wait()
+	return sequencesFound > 1
 }
 
-func checkSequences(dna [][]string) bool {
-	size := len(dna)
-	totalSequences := 0
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			var rowSequences int
-			rowSequences = findSequences(dna, i, j)
-			totalSequences += rowSequences
-			if totalSequences > 1 {
-				return true
-			}
+func searchSequences(dna [][]string,
+	start, end int,
+	sequenceCalculation func([][]string, int) int,
+	sequencesFound *int,
+	wg *sync.WaitGroup,
+	m *sync.Mutex) {
+	for i := start; i <= end; i++ {
+		if *sequencesFound > 1 {
+			wg.Done()
+			return
 		}
-		if totalSequences > 1 {
-			return true
-		}
+		sequences := 0
+		sequences = sequenceCalculation(dna, i)
+		m.Lock()
+		*sequencesFound += sequences
+		m.Unlock()
 	}
-	return totalSequences > 1
+	wg.Done()
 }
 
-func findSequences(dna [][]string, i int, j int) int {
-	totalSequences := 0
-	if i+4 <= len(dna)-1 {
-		totalSequences += findVerticalSequence(dna, i, j)
-		if totalSequences > 1 {
-			return totalSequences
-		}
-	}
-	if j+4 <= len(dna)-1 {
-		totalSequences += findHorizontalSequence(dna[i], j)
-		if totalSequences > 1 {
-			return totalSequences
-		}
-	}
-	if i+4 <= len(dna)-1 && j+4 <= len(dna)-1 {
-		totalSequences += findDiagonalSequence(dna, i, j)
-		if totalSequences > 1 {
-			return totalSequences
-		}
-	}
-	return totalSequences
-}
-
-func findDiagonalSequence(dna [][]string, i int, j int) int {
+func findDiagonalUpperSequence(dna [][]string, y int) int {
 	sequence := ""
-	for index1, index2 := i, j; index1 < len(dna) && index2 < len(dna); index1, index2 = index1+1, index2+1 {
+	for index1, index2 := 0, y; index1 < len(dna) && index2 < len(dna); index1, index2 = index1+1, index2+1 {
 		sequence += dna[index1][index2]
 	}
 	return evaluateMatchSequence(sequence)
 }
 
-func findHorizontalSequence(dna []string, j int) int {
-	return evaluateMatchSequence(strings.Join(dna[j:], ""))
+func findDiagonalLowerSequence(dna [][]string, x int) int {
+	sequence := ""
+	for index1, index2 := x, 0; index1 < len(dna) && index2 < len(dna); index1, index2 = index1+1, index2+1 {
+		sequence += dna[index1][index2]
+	}
+	return evaluateMatchSequence(sequence)
 }
 
-func findVerticalSequence(dna [][]string, i int, j int) int {
+func findHorizontalSequence(dna [][]string, i int) int {
+	return evaluateMatchSequence(strings.Join(dna[i], ""))
+}
+
+func findVerticalSequence(dna [][]string, i int) int {
 	sequence := ""
-	for index := i; index < len(dna); index++ {
-		sequence += dna[index][j]
+	for index := 0; index < len(dna); index++ {
+		sequence += dna[index][i]
 	}
 	return evaluateMatchSequence(sequence)
 }
 
 func evaluateMatchSequence(sequence string) int {
 	reg := regexp.MustCompile("(?:AAAA|TTTT|CCCC|GGGG)(?:\\s+(?:AAAA|TTTT|CCCC|GGGG))*")
-	sequencesFound := reg.FindAllString(sequence, -1)
-	return len(sequencesFound)
+	return len(reg.FindAllString(sequence, -1))
 }
 
 func createMatrix(dna []string) [][]string {

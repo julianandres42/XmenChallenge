@@ -37,7 +37,7 @@ func GetNewStats(countMutant, countHuman int, ratio float32) *Stats {
 func (a *App) Initialize(user, password, host, dbname, machine string) {
 	a.EstablishDataBaseConnection(user, password, host, dbname, machine)
 	a.Evaluator = api.NewDnaSequenceEvaluator()
-	a.DbApi = persistence.NewMysqlImp()
+	a.DbApi = persistence.NewMysqlImp(a.DB)
 }
 
 func (a *App) EstablishDataBaseConnection(user, password, host, dbname, machine string) {
@@ -67,7 +67,7 @@ func (a *App) IsMutant(writer http.ResponseWriter, request *http.Request) {
 	a.Evaluator.SetDna(mutant.Dna)
 	isMutant := a.Evaluator.IsMutant()
 	candidate := persistence.GetNewCandidate(strings.Join(mutant.Dna, ","), isMutant)
-	err := a.DbApi.SaveCandidate(a.DB, candidate)
+	err := a.DbApi.SaveCandidate(candidate)
 	if err != nil {
 		fmt.Fprintf(writer, "error in data base connection")
 		log.Print("Error in database connection")
@@ -88,7 +88,7 @@ func (a *App) Stats(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Print("Getting stats")
-	dbStats, err := a.DbApi.GetStats(a.DB)
+	dbStats, err := a.DbApi.GetStats()
 	if err != nil {
 		fmt.Fprintf(writer, "error in data base connection")
 		log.Print("Error in database connection")

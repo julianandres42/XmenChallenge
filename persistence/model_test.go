@@ -14,9 +14,9 @@ func TestSaveCandidateMutant(t *testing.T) {
 	mutant := sqlmock.NewRows([]string{"dna", "is_mutant"})
 	mock.ExpectQuery("SELECT (.+) FROM Candidate WHERE dna = \\?").WithArgs("").WillReturnRows(mutant)
 	mock.ExpectExec("INSERT INTO Candidate").WithArgs("", true).WillReturnResult(sqlmock.NewResult(1, 1))
-	dbApi := NewMysqlImp()
+	dbApi := NewMysqlImp(db)
 	candidate := GetNewCandidate("", true)
-	err = dbApi.SaveCandidate(db, candidate)
+	err = dbApi.SaveCandidate(candidate)
 	if err != nil {
 		t.Errorf("An error '%s' was not expected when making data base operation", err)
 	}
@@ -31,9 +31,9 @@ func TestSaveCandidateNotMutant(t *testing.T) {
 	mutant := sqlmock.NewRows([]string{"dna", "is_mutant"}).AddRow("", 1)
 	mock.ExpectQuery("SELECT (.+) FROM Candidate WHERE dna = \\?").WithArgs("").WillReturnRows(mutant)
 	mock.ExpectExec("INSERT INTO Candidate").WithArgs("", true).WillReturnResult(sqlmock.NewResult(1, 1))
-	dbApi := NewMysqlImp()
+	dbApi := NewMysqlImp(db)
 	candidate := GetNewCandidate("", true)
-	err = dbApi.SaveCandidate(db, candidate)
+	err = dbApi.SaveCandidate(candidate)
 	if err != nil {
 		t.Errorf("An error '%s' was not expected when making data base operation", err)
 	}
@@ -49,8 +49,8 @@ func TestStats(t *testing.T) {
 	rowsMutants := sqlmock.NewRows([]string{"count"}).AddRow(1)
 	mock.ExpectQuery("SELECT count").WillReturnRows(rowsNotMutants)
 	mock.ExpectQuery("SELECT count").WillReturnRows(rowsMutants)
-	dbApi := NewMysqlImp()
-	stats, error := dbApi.GetStats(db)
+	dbApi := NewMysqlImp(db)
+	stats, error := dbApi.GetStats()
 	if error != nil {
 		t.Errorf("An error '%s' was not expected when making data base operation", err)
 	}

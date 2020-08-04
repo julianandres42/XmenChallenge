@@ -3,7 +3,6 @@ package app
 import (
 	"XmenChallenge/persistence"
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -31,11 +30,11 @@ func (T2) SetDna(dna []string) {}
 type T3 struct {
 }
 
-func (T3) SaveCandidate(db *sql.DB, candidate *persistence.Candidate) error {
+func (T3) SaveCandidate(candidate *persistence.Candidate) error {
 	return nil
 }
 
-func (T3) GetStats(db *sql.DB) (*persistence.Stats, error) {
+func (T3) GetStats() (*persistence.Stats, error) {
 	return persistence.GetNewStats(1, 1), nil
 }
 

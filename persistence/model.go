@@ -5,8 +5,8 @@ import (
 )
 
 type DbApi interface {
-	SaveCandidate(db *sql.DB, candidate *Candidate) error
-	GetStats(db *sql.DB) (*Stats, error)
+	SaveCandidate(candidate *Candidate) error
+	GetStats() (*Stats, error)
 }
 
 type Candidate struct {
@@ -47,34 +47,36 @@ func GetNewStats(countMutants, countHumans int) *Stats {
 	return &Stats{countHumans: countHumans, countMutants: countMutants}
 }
 
-type MysqlImp struct{}
+type MysqlImp struct {
+	dataSource *sql.DB
+}
 
-func (imp *MysqlImp) SaveCandidate(db *sql.DB, candidate *Candidate) error {
-	rows, err := db.Query("SELECT * FROM Candidate WHERE dna = ?", candidate.getDna())
+func (imp *MysqlImp) SaveCandidate(candidate *Candidate) error {
+	rows, err := imp.dataSource.Query("SELECT * FROM Candidate WHERE dna = ?", candidate.getDna())
 	if err != nil {
 		return err
 	}
 	if !rows.Next() {
-		_, err = db.Exec("INSERT INTO Candidate (dna, is_mutant) VALUES (?, ?)", candidate.getDna(), candidate.getIsMutant())
+		_, err = imp.dataSource.Exec("INSERT INTO Candidate (dna, is_mutant) VALUES (?, ?)", candidate.getDna(), candidate.getIsMutant())
 		return err
 	}
 	return nil
 }
 
-func (imp *MysqlImp) GetStats(db *sql.DB) (*Stats, error) {
+func (imp *MysqlImp) GetStats() (*Stats, error) {
 	var nMutants int
-	err := db.QueryRow("SELECT count(*) FROM Candidate WHERE is_mutant = ?", true).Scan(&nMutants)
+	err := imp.dataSource.QueryRow("SELECT count(*) FROM Candidate WHERE is_mutant = ?", true).Scan(&nMutants)
 	if err != nil {
 		return nil, err
 	}
 	var nHumans int
-	err = db.QueryRow("SELECT count(*) FROM Candidate WHERE is_mutant = ?", false).Scan(&nHumans)
+	err = imp.dataSource.QueryRow("SELECT count(*) FROM Candidate WHERE is_mutant = ?", false).Scan(&nHumans)
 	if err != nil {
 		return nil, err
 	}
 	return GetNewStats(nMutants, nHumans), nil
 }
 
-func NewMysqlImp() DbApi {
-	return &MysqlImp{}
+func NewMysqlImp(db *sql.DB) DbApi {
+	return &MysqlImp{dataSource: db}
 }

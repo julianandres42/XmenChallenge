@@ -146,6 +146,27 @@ func TestSearchHorizontalSequences(t *testing.T) {
 	}
 }
 
+func TestHorizontalSequencesConcurrently(t *testing.T) {
+	var w sync.WaitGroup
+	var mg sync.Mutex
+	dna := [][]string{
+		{"G", "G", "G", "G", "G", "A"},
+		{"T", "T", "T", "T", "G", "C"},
+		{"A", "G", "A", "A", "G", "T"},
+		{"A", "T", "A", "A", "T", "G"},
+		{"A", "A", "A", "A", "T", "A"},
+		{"T", "C", "A", "C", "A", "G"},
+	}
+	sequencesFound := 0
+	w.Add(2)
+	go searchSequences(dna, 0, 2, findHorizontalSequence, &sequencesFound, &w, &mg)
+	go searchSequences(dna, 3, 5, findHorizontalSequence, &sequencesFound, &w, &mg)
+	w.Wait()
+	if sequencesFound < 1 {
+		t.Errorf("Sequence not found in indexes 1 , 2")
+	}
+}
+
 func TestSearchVerticalSequences(t *testing.T) {
 	var w sync.WaitGroup
 	var mg sync.Mutex
@@ -162,6 +183,27 @@ func TestSearchVerticalSequences(t *testing.T) {
 	searchSequences(dna, 1, 2, findVerticalSequence, &sequencesFound, &w, &mg)
 	w.Wait()
 	if sequencesFound != 2 {
+		t.Errorf("Sequence not found in indexes 1 , 2")
+	}
+}
+
+func TestSearchVerticalSequencesConcurrently(t *testing.T) {
+	var w sync.WaitGroup
+	var mg sync.Mutex
+	dna := [][]string{
+		{"A", "T", "A", "C", "G", "A"},
+		{"T", "T", "T", "T", "G", "C"},
+		{"A", "T", "A", "A", "G", "T"},
+		{"A", "A", "A", "A", "G", "G"},
+		{"C", "C", "A", "T", "G", "A"},
+		{"T", "C", "A", "C", "G", "G"},
+	}
+	sequencesFound := 0
+	w.Add(2)
+	go searchSequences(dna, 0, 2, findVerticalSequence, &sequencesFound, &w, &mg)
+	go searchSequences(dna, 3, 5, findVerticalSequence, &sequencesFound, &w, &mg)
+	w.Wait()
+	if sequencesFound < 1 {
 		t.Errorf("Sequence not found in indexes 1 , 2")
 	}
 }
@@ -206,18 +248,53 @@ func TestSearchLowerDiagonalSequences(t *testing.T) {
 	}
 }
 
-//func TestIsMutant(t *testing.T) {
-//	dna := []string{"ATGCGA", "CAGTGC", "TTATGT", "AGAAGG", "CCCCTA", "TCACTG"}
-//	evaluator := DnaSequenceEvaluator{}
-//	evaluator.Dna = dna
-//	isMutant := evaluator.IsMutant()
-//	if !isMutant {
-//		t.Errorf("Got not mutant")
-//	}
-//	dna = []string{"ATGCGA", "CAGTGC", "TTATTT", "AGACGG", "GCGTCA", "TCACTG"}
-//	evaluator.Dna = dna
-//	isMutant = evaluator.IsMutant()
-//	if isMutant {
-//		t.Errorf("Got mutant")
-//	}
-//}
+func TestSearchDiagonalSequencesConcurrently(t *testing.T) {
+	var w sync.WaitGroup
+	var mg sync.Mutex
+	dna := [][]string{
+		{"A", "T", "A", "C", "G", "A"},
+		{"T", "T", "T", "A", "G", "C"},
+		{"A", "T", "A", "T", "C", "T"},
+		{"A", "A", "T", "A", "T", "A"},
+		{"C", "C", "A", "T", "T", "T"},
+		{"T", "C", "A", "A", "T", "G"},
+	}
+	sequencesFound := 0
+	w.Add(2)
+	searchSequences(dna, 1, 2, findDiagonalLowerSequence, &sequencesFound, &w, &mg)
+	searchSequences(dna, 1, 2, findDiagonalUpperSequence, &sequencesFound, &w, &mg)
+	w.Wait()
+	if sequencesFound < 1 {
+		t.Errorf("Sequence not found in indexes 1 , 2")
+	}
+}
+
+func TestIsMutant(t *testing.T) {
+	dna := []string{"ATGCGA", "CAGTGC", "TTATGT", "AGAAGG", "CCCCTA", "TCACTG"}
+	evaluator := DnaSequenceEvaluator{}
+	evaluator.Dna = dna
+	isMutant := evaluator.IsMutant()
+	if !isMutant {
+		t.Errorf("Got not mutant")
+	}
+	dna = []string{"ATGCGA", "CAGTGC", "TTATTT", "AGACGG", "GCGTCA", "TCACTG"}
+	evaluator.Dna = dna
+	isMutant = evaluator.IsMutant()
+	if isMutant {
+		t.Errorf("Got mutant")
+	}
+	dna = []string{"ATGCG", "CCGTG", "TTATG", "AGAAG", "CCCCT"}
+	evaluator = DnaSequenceEvaluator{}
+	evaluator.Dna = dna
+	isMutant = evaluator.IsMutant()
+	if !isMutant {
+		t.Errorf("Got not mutant")
+	}
+	dna = []string{"ATGCC", "CCGTT", "TTATA", "AGAAA", "CCCCT"}
+	evaluator = DnaSequenceEvaluator{}
+	evaluator.Dna = dna
+	isMutant = evaluator.IsMutant()
+	if isMutant {
+		t.Errorf("Got mutant")
+	}
+}
